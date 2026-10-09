@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AWS AI Services - Rekognition & Textract</title>
+    <style>
+        :root {
+            --primary-color: #232f3e;
+            --accent-color: #ff9900;
+            --accent-hover: #ec8b00;
+            --bg-color: #f4f6f8;
+            --card-bg: #ffffff;
+            --text-main: #16191f;
+            --text-secondary: #545b64;
+            --border-color: #d5dbdb;
+            --success-color: #1d8102;
+            --error-color: #d13212;
+            --radius: 8px;
+            --transition: all 0.2s ease-in-out;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: #ffffff;
+            padding: 1.25rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .badge {
+            background-color: var(--accent-color);
+            color: var(--primary-color);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            flex: 1;
+        }
+
+        .service-section {
+            margin-bottom: 3rem;
+        }
+
+        .section-header {
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .section-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .card-description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* Dropzone / Upload area */
+        .dropzone {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius);
+            padding: 2rem 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            background-color: #fafbfc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--accent-color);
+            background-color: #fff9f0;
+        }
+
+        .dropzone-icon {
+            font-size: 2.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+        }
+
+        .dropzone-text {
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .dropzone-hint {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        /* Preview container */
+        .preview-container {
+            margin-top: 1.25rem;
+            text-align: center;
+            position: relative;
+            display: none;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 260px;
+            object-fit: contain;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+        }
+
+        .image-info {
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* Actions */
+        .actions {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.65rem 1.25rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: var(--radius);
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: var(--primary-color);
+            flex: 1;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background-color: #eaeded;
+            color: var(--text-main);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background-color: #d5dbdb;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* Results section */
+        .placeholder-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 2.5rem 1rem;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .placeholder-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .loading-state {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            padding: 3rem 1rem;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 42px;
+            height: 42px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Alert / Messages */
+        .alert {
+            padding: 0.85rem 1rem;
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .alert-error {
+            background-color: #fdf2f2;
+            border: 1px solid #f8b4b4;
+            color: var(--error-color);
+        }
+
+        /* Labels results list */
+        .results-container {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .results-count {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .label-item {
+            padding: 0.85rem 1rem;
+            background-color: #fbfbfb;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            margin-bottom: 0.75rem;
+            transition: var(--transition);
+        }
+
+        .label-item:hover {
+            border-color: #b0b8c1;
+            background-color: #f7f9fa;
+        }
+
+        .label-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.4rem;
+        }
+
+        .label-name {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text-main);
+        }
+
+        .label-confidence {
+            font-weight: 700;
+            font-size: 0.875rem;
+            color: var(--primary-color);
+        }
+
+        .progress-bar-bg {
+            height: 6px;
+            background-color: #e1e4e8;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--accent-color);
+            border-radius: 3px;
+            transition: width 0.4s ease;
+        }
+
+        .label-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            font-size: 0.75rem;
+        }
+
+        .tag {
+            background-color: #e9ecef;
+            color: var(--text-secondary);
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+        }
+
+        /* OCR Textarea styling */
+        .ocr-textarea {
+            width: 100%;
+            min-height: 250px;
+            padding: 1rem;
+            font-family: monospace;
+            font-size: 0.95rem;
+            background-color: #fafbfc;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            resize: vertical;
+            line-height: 1.5;
+            color: var(--text-main);
+        }
+
+        .ocr-textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        footer {
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            border-top: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>
+            <span>AWS Cloud Services</span>
+        </h1>
+        <span class="badge">API Demo</span>
+    </header>
+
+    <div class="container">
+        <!-- SECCIÓN 1: AWS Rekognition -->
+        <section class="service-section">
+            <div class="section-header">
+                <h2 class="section-title"><span>🖼️</span> AWS Rekognition - Detección de Etiquetas</h2>
+                <span class="badge">POST /api/analizar</span>
+            </div>
+
+            <div class="section-grid">
+                <!-- Panel Izquierdo: Carga de Imagen -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Seleccionar Imagen</h3>
+                        <p class="card-description">Sube una fotografía en formato JPG o PNG para detectar objetos, escenas y conceptos.</p>
+                    </div>
+
+                    <div class="dropzone" id="dropzone">
+                        <div class="dropzone-icon">📷</div>
+                        <p class="dropzone-text">Arrastra tu imagen aquí o haz clic para explorar</p>
+                        <p class="dropzone-hint">Formatos aceptados: JPG, JPEG, PNG, WEBP</p>
+                        <input type="file" id="fileInput" accept="image/*">
+                    </div>
+
+                    <div class="preview-container" id="previewContainer">
+                        <img id="imagePreview" class="preview-image" alt="Vista previa de la imagen">
+                        <div id="imageInfo" class="image-info"></div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" class="btn btn-secondary" id="btnReset" style="display: none;">Limpiar</button>
+                        <button type="button" class="btn btn-primary" id="btnAnalyze" disabled>
+                            <span>Analizar Imagen</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panel Derecho: Resultados Rekognition -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Etiquetas Detectadas</h3>
+                        <p class="card-description">Resultados del análisis generado por Amazon Rekognition.</p>
+                    </div>
+
+                    <div id="alertError" class="alert alert-error"></div>
+
+                    <div class="placeholder-state" id="placeholderState">
+                        <div class="placeholder-icon">🏷️</div>
+                        <p><strong>Aún no se ha realizado ningún análisis</strong></p>
+                        <p style="font-size: 0.875rem; margin-top: 0.25rem;">Carga una imagen y presiona "Analizar Imagen" para visualizar las etiquetas y nivel de confianza.</p>
+                    </div>
+
+                    <div class="loading-state" id="loadingState">
+                        <div class="spinner"></div>
+                        <p><strong>Procesando imagen con AWS Rekognition...</strong></p>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">Detectando objetos, conceptos y etiquetas con alta precisión.</p>
+                    </div>
+
+                    <div class="results-container" id="resultsContainer">
+                        <div class="results-count" id="resultsCount"></div>
+                        <div id="labelsList"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN 2: AWS Textract OCR -->
+        <section class="service-section">
+            <div class="section-header">
+                <h2 class="section-title"><span>📄</span> AWS Textract - Extracción de Texto (OCR)</h2>
+                <span class="badge">POST /api/ocr</span>
+            </div>
+
+            <div class="section-grid">
+                <!-- Panel Izquierdo: Carga de Documento/Imagen OCR -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Seleccionar Documento / Imagen</h3>
+                        <p class="card-description">Sube un documento o imagen para extraer el texto mediante OCR.</p>
+                    </div>
+
+                    <div class="dropzone" id="ocrDropzone">
+                        <div class="dropzone-icon">📑</div>
+                        <p class="dropzone-text">Arrastra tu documento/imagen aquí o haz clic para explorar</p>
+                        <p class="dropzone-hint">Formatos aceptados: JPG, JPEG, PNG, PDF</p>
+                        <input type="file" id="ocrFileInput" accept="image/*,application/pdf">
+                    </div>
+
+                    <div class="preview-container" id="ocrPreviewContainer">
+                        <img id="ocrImagePreview" class="preview-image" alt="Vista previa del documento">
+                        <div id="ocrFileInfo" class="image-info"></div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="button" class="btn btn-secondary" id="ocrBtnReset" style="display: none;">Limpiar</button>
+                        <button type="button" class="btn btn-primary" id="ocrBtnExtract" disabled>
+                            <span>Extraer Texto (OCR)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panel Derecho: Resultados OCR -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Texto Extraído</h3>
+                        <p class="card-description">Texto detectado por Amazon Textract.</p>
+                    </div>
+
+                    <div id="ocrAlertError" class="alert alert-error"></div>
+
+                    <div class="placeholder-state" id="ocrPlaceholderState">
+                        <div class="placeholder-icon">📝</div>
+                        <p><strong>Aún no se ha realizado ninguna extracción</strong></p>
+                        <p style="font-size: 0.875rem; margin-top: 0.25rem;">Carga un archivo y presiona "Extraer Texto (OCR)" para obtener el contenido textual.</p>
+                    </div>
+
+                    <div class="loading-state" id="ocrLoadingState">
+                        <div class="spinner"></div>
+                        <p><strong>Extrayendo texto con AWS Textract...</strong></p>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">Analizando las líneas y bloques de texto del documento.</p>
+                    </div>
+
+                    <div class="results-container" id="ocrResultsContainer">
+                        <div class="results-count" id="ocrResultsCount"></div>
+                        <textarea id="ocrOutputText" class="ocr-textarea" readonly placeholder="El texto extraído aparecerá aquí..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>Backend API: <code>/api/analizar</code> (Rekognition) | <code>/api/ocr</code> (Textract)</p>
+    </footer>
+
+    <script>
+        // ==================== LÓGICA REKOGNITION ====================
+        const dropzone = document.getElementById("dropzone");
+        const fileInput = document.getElementById("fileInput");
+        const previewContainer = document.getElementById("previewContainer");
+        const imagePreview = document.getElementById("imagePreview");
+        const imageInfo = document.getElementById("imageInfo");
+        const btnAnalyze = document.getElementById("btnAnalyze");
+        const btnReset = document.getElementById("btnReset");
+
+        const placeholderState = document.getElementById("placeholderState");
+        const loadingState = document.getElementById("loadingState");
+        const resultsContainer = document.getElementById("resultsContainer");
+        const resultsCount = document.getElementById("resultsCount");
+        const labelsList = document.getElementById("labelsList");
+        const alertError = document.getElementById("alertError");
+
+        let selectedFile = null;
+
+        // Manejo de Drag and Drop
+        dropzone.addEventListener("click", () => fileInput.click());
+
+        ["dragenter", "dragover"].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add("dragover");
+            });
+        });
+
+        ["dragleave", "drop"].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove("dragover");
+            });
+        });
+
+        dropzone.addEventListener("drop", (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelection(files[0]);
+            }
+        });
+
+        fileInput.addEventListener("change", (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelection(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelection(file) {
+            if (!file.type.startsWith("image/")) {
+                showError("Por favor selecciona un archivo de imagen válido (JPG, PNG, WEBP, etc.).");
+                return;
+            }
+
+            hideError();
+            selectedFile = file;
+
+            const sizeInKb = (file.size / 1024).toFixed(1);
+            imageInfo.textContent = `${file.name} (${sizeInKb} KB)`;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+                previewContainer.style.display = "block";
+                btnAnalyze.disabled = false;
+                btnReset.style.display = "inline-flex";
+            };
+            reader.readAsDataURL(file);
+        }
+
+        btnReset.addEventListener("click", () => {
+            selectedFile = null;
+            fileInput.value = "";
+            imagePreview.src = "";
+            previewContainer.style.display = "none";
+            btnAnalyze.disabled = true;
+            btnReset.style.display = "none";
+            hideError();
+            showPlaceholder();
+        });
+
+        btnAnalyze.addEventListener("click", async () => {
+            if (!selectedFile) {
+                showError("No se ha seleccionado ninguna imagen.");
+                return;
+            }
+
+            hideError();
+            showLoading();
+
+            const formData = new FormData();
+            formData.append("imagen", selectedFile);
+
+            try {
+                const response = await fetch("/api/analizar", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    const message = data.details || data.error || "Error al procesar la solicitud en el servidor.";
+                    throw new Error(message);
+                }
+
+                if (data.success && Array.isArray(data.labels)) {
+                    renderResults(data.labels);
+                } else {
+                    throw new Error("Respuesta inválida del servidor.");
+                }
+            } catch (err) {
+                showError(err.message || "Error al conectar con el servidor.");
+                showPlaceholder();
+            } finally {
+                hideLoading();
+            }
+        });
+
+        function renderResults(labels) {
+            placeholderState.style.display = "none";
+            resultsContainer.style.display = "block";
+            labelsList.innerHTML = "";
+
+            if (labels.length === 0) {
+                resultsCount.textContent = "No se detectaron etiquetas con el umbral de confianza mínimo configurado.";
+                return;
+            }
+
+            resultsCount.textContent = `Se encontraron ${labels.length} etiqueta(s):`;
+
+            labels.forEach(label => {
+                const confidence = label.Confidence ? label.Confidence.toFixed(2) : "0.00";
+                const parents = label.Parents && label.Parents.length > 0 
+                    ? label.Parents.map(p => `<span class="tag">📁 ${escapeHtml(p.Name)}</span>`).join("")
+                    : "";
+                
+                const instancesCount = label.Instances && label.Instances.length > 0
+                    ? `<span class="tag">🎯 ${label.Instances.length} instancia(s)</span>`
+                    : "";
+
+                const item = document.createElement("div");
+                item.className = "label-item";
+                item.innerHTML = `
+                    <div class="label-header">
+                        <span class="label-name">${escapeHtml(label.Name || "Desconocido")}</span>
+                        <span class="label-confidence">${confidence}%</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width: ${confidence}%"></div>
+                    </div>
+                    ${parents || instancesCount ? `<div class="label-meta">${parents} ${instancesCount}</div>` : ""}
+                `;
+                labelsList.appendChild(item);
+            });
+        }
+
+        function showLoading() {
+            placeholderState.style.display = "none";
+            resultsContainer.style.display = "none";
+            loadingState.style.display = "flex";
+            btnAnalyze.disabled = true;
+            btnReset.disabled = true;
+        }
+
+        function hideLoading() {
+            loadingState.style.display = "none";
+            btnAnalyze.disabled = !selectedFile;
+            btnReset.disabled = false;
+        }
+
+        function showPlaceholder() {
+            resultsContainer.style.display = "none";
+            placeholderState.style.display = "flex";
+        }
+
+        function showError(message) {
+            alertError.textContent = message;
+            alertError.style.display = "block";
+        }
+
+        function hideError() {
+            alertError.textContent = "";
+            alertError.style.display = "none";
+        }
+
+
+        // ==================== LÓGICA OCR (TEXTRACT) ====================
+        const ocrDropzone = document.getElementById("ocrDropzone");
+        const ocrFileInput = document.getElementById("ocrFileInput");
+        const ocrPreviewContainer = document.getElementById("ocrPreviewContainer");
+        const ocrImagePreview = document.getElementById("ocrImagePreview");
+        const ocrFileInfo = document.getElementById("ocrFileInfo");
+        const ocrBtnExtract = document.getElementById("ocrBtnExtract");
+        const ocrBtnReset = document.getElementById("ocrBtnReset");
+
+        const ocrPlaceholderState = document.getElementById("ocrPlaceholderState");
+        const ocrLoadingState = document.getElementById("ocrLoadingState");
+        const ocrResultsContainer = document.getElementById("ocrResultsContainer");
+        const ocrResultsCount = document.getElementById("ocrResultsCount");
+        const ocrOutputText = document.getElementById("ocrOutputText");
+        const ocrAlertError = document.getElementById("ocrAlertError");
+
+        let ocrSelectedFile = null;
+
+        ocrDropzone.addEventListener("click", () => ocrFileInput.click());
+
+        ["dragenter", "dragover"].forEach(eventName => {
+            ocrDropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                ocrDropzone.classList.add("dragover");
+            });
+        });
+
+        ["dragleave", "drop"].forEach(eventName => {
+            ocrDropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                ocrDropzone.classList.remove("dragover");
+            });
+        });
+
+        ocrDropzone.addEventListener("drop", (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleOcrFileSelection(files[0]);
+            }
+        });
+
+        ocrFileInput.addEventListener("change", (e) => {
+            if (e.target.files.length > 0) {
+                handleOcrFileSelection(e.target.files[0]);
+            }
+        });
+
+        function handleOcrFileSelection(file) {
+            const isValid = file.type.startsWith("image/") || file.type === "application/pdf";
+            if (!isValid) {
+                showOcrError("Por favor selecciona un archivo de imagen o PDF válido.");
+                return;
+            }
+
+            hideOcrError();
+            ocrSelectedFile = file;
+
+            const sizeInKb = (file.size / 1024).toFixed(1);
+            ocrFileInfo.textContent = `${file.name} (${sizeInKb} KB)`;
+
+            if (file.type.startsWith("image/")) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    ocrImagePreview.src = e.target.result;
+                    ocrImagePreview.style.display = "block";
+                    ocrPreviewContainer.style.display = "block";
+                };
+                reader.readAsDataURL(file);
+            } else {
+                ocrImagePreview.style.display = "none";
+                ocrPreviewContainer.style.display = "block";
+            }
+
+            ocrBtnExtract.disabled = false;
+            ocrBtnReset.style.display = "inline-flex";
+        }
+
+        ocrBtnReset.addEventListener("click", () => {
+            ocrSelectedFile = null;
+            ocrFileInput.value = "";
+            ocrImagePreview.src = "";
+            ocrPreviewContainer.style.display = "none";
+            ocrBtnExtract.disabled = true;
+            ocrBtnReset.style.display = "none";
+            ocrOutputText.value = "";
+            hideOcrError();
+            showOcrPlaceholder();
+        });
+
+        ocrBtnExtract.addEventListener("click", async () => {
+            if (!ocrSelectedFile) {
+                showOcrError("No se ha seleccionado ningún archivo.");
+                return;
+            }
+
+            hideOcrError();
+            showOcrLoading();
+
+            const formData = new FormData();
+            formData.append("document", ocrSelectedFile);
+
+            try {
+                const response = await fetch("/api/ocr", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    const message = data.error || data.details || "Error al procesar el documento en el servidor.";
+                    throw new Error(message);
+                }
+
+                if (data.value !== undefined) {
+                    renderOcrResults(data.value);
+                } else {
+                    throw new Error("Respuesta inválida del servidor.");
+                }
+            } catch (err) {
+                showOcrError(err.message || "Error al conectar con el servidor.");
+                showOcrPlaceholder();
+            } finally {
+                hideOcrLoading();
+            }
+        });
+
+        function renderOcrResults(text) {
+            ocrPlaceholderState.style.display = "none";
+            ocrResultsContainer.style.display = "block";
+            ocrOutputText.value = text;
+            
+            if (!text || text.trim() === "") {
+                ocrResultsCount.textContent = "No se detectó ningún texto en el documento.";
+            } else {
+                const linesCount = text.split("\n").filter(l => l.trim().length > 0).length;
+                ocrResultsCount.textContent = `Texto extraído con éxito (${linesCount} línea(s) detectada(s)):`;
+            }
+        }
+
+        function showOcrLoading() {
+            ocrPlaceholderState.style.display = "none";
+            ocrResultsContainer.style.display = "none";
+            ocrLoadingState.style.display = "flex";
+            ocrBtnExtract.disabled = true;
+            ocrBtnReset.disabled = true;
+        }
+
+        function hideOcrLoading() {
+            ocrLoadingState.style.display = "none";
+            ocrBtnExtract.disabled = !ocrSelectedFile;
+            ocrBtnReset.disabled = false;
+        }
+
+        function showOcrPlaceholder() {
+            ocrResultsContainer.style.display = "none";
+            ocrPlaceholderState.style.display = "flex";
+        }
+
+        function showOcrError(message) {
+            ocrAlertError.textContent = message;
+            ocrAlertError.style.display = "block";
+        }
+
+        function hideOcrError() {
+            ocrAlertError.textContent = "";
+            ocrAlertError.style.display = "none";
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
